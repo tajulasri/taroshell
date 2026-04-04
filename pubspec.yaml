@@ -1,0 +1,87 @@
+name: taroshell
+description: "Taro Shell - A professional SSH console desktop application with modern UI."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Terminal emulation
+  xterm: ^4.0.0
+
+  # SSH client
+  dartssh2: ^2.17.0
+
+  # Database
+  drift: ^2.22.1
+  drift_flutter: ^0.2.4
+  sqlite3_flutter_libs: ^0.5.28
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Routing
+  go_router: ^14.8.1
+
+  # Window management
+  window_manager: ^0.4.3
+
+  # Secure storage
+  flutter_secure_storage: ^9.2.4
+
+  # Cryptography for key generation
+  pointycastle: ^4.0.0
+
+  # ASN.1 encoding/decoding for SSH key formats
+  asn1lib: ^1.6.5
+
+  # Ed25519 key generation (transitive via dartssh2, promoted to direct)
+  pinenacl: ^0.6.0
+
+  # File picker
+  file_picker: ^8.1.7
+
+  # UUID generation
+  uuid: ^4.5.1
+
+  # Path utilities
+  path: ^1.9.1
+
+  # Collection utilities
+  collection: ^1.19.1
+
+  # Intl for formatting
+  intl: ^0.19.0
+
+  # Structured logging
+  logger: ^2.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.22.1
+  build_runner: ^2.4.15
+  riverpod_generator: ^2.6.3
+  custom_lint: ^0.7.5
+  riverpod_lint: ^2.6.3
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/app_logo.png
+
+  fonts:
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+        - asset: assets/fonts/JetBrainsMono-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/JetBrainsMono-Italic.ttf
+          style: italic
