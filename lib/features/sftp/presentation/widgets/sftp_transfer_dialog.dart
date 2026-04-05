@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:taroshell/core/theme/app_colors.dart';
+import 'package:taroshell/core/utils/format_utils.dart';
 
 /// Dialog that displays the progress of a file transfer (upload or download).
 ///
@@ -77,7 +78,7 @@ class SftpTransferDialogState extends State<SftpTransferDialog> {
     if (elapsed.inMilliseconds == 0) return '';
 
     final bytesPerSecond = _transferred / elapsed.inMilliseconds * 1000;
-    return _formatSpeed(bytesPerSecond);
+    return FormatUtils.formatSpeed(bytesPerSecond);
   }
 
   @override
@@ -144,7 +145,7 @@ class SftpTransferDialogState extends State<SftpTransferDialog> {
                 Text(
                   _isComplete
                       ? 'Complete'
-                      : '$_percentage  ${_formatBytes(_transferred)} / ${_formatBytes(_total)}',
+                      : '$_percentage  ${FormatUtils.formatBytes(_transferred)} / ${FormatUtils.formatBytes(_total)}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: isDark
                         ? AppColors.darkOnSurface.withValues(alpha: 0.6)
@@ -178,32 +179,6 @@ class SftpTransferDialogState extends State<SftpTransferDialog> {
           ),
       ],
     );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Formatting helpers
-  // ---------------------------------------------------------------------------
-
-  static const int _kibibyte = 1024;
-  static const int _mebibyte = 1024 * 1024;
-  static const int _gibibyte = 1024 * 1024 * 1024;
-
-  static String _formatBytes(int bytes) {
-    if (bytes < _kibibyte) return '$bytes B';
-    if (bytes < _mebibyte) return '${(bytes / _kibibyte).toStringAsFixed(1)} KB';
-    if (bytes < _gibibyte) return '${(bytes / _mebibyte).toStringAsFixed(1)} MB';
-    return '${(bytes / _gibibyte).toStringAsFixed(1)} GB';
-  }
-
-  static String _formatSpeed(double bytesPerSecond) {
-    if (bytesPerSecond < _kibibyte) return '${bytesPerSecond.toStringAsFixed(0)} B/s';
-    if (bytesPerSecond < _mebibyte) {
-      return '${(bytesPerSecond / _kibibyte).toStringAsFixed(1)} KB/s';
-    }
-    if (bytesPerSecond < _gibibyte) {
-      return '${(bytesPerSecond / _mebibyte).toStringAsFixed(1)} MB/s';
-    }
-    return '${(bytesPerSecond / _gibibyte).toStringAsFixed(1)} GB/s';
   }
 
   // ---------------------------------------------------------------------------

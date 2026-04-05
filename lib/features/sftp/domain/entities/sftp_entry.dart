@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:taroshell/core/utils/format_utils.dart';
 
 /// The type of a remote file system entry.
 enum SftpEntryType {
@@ -77,7 +78,7 @@ class SftpEntry {
   /// Directories return an em-dash to indicate size is not applicable.
   String get formattedSize {
     if (type == SftpEntryType.directory) return '\u2014';
-    return _formatBytes(size);
+    return FormatUtils.formatBytes(size);
   }
 
   /// Returns a formatted date string for the modification timestamp.
@@ -99,21 +100,6 @@ class SftpEntry {
   // ---------------------------------------------------------------------------
   // Private formatting utilities
   // ---------------------------------------------------------------------------
-
-  static const int _kibibyte = 1024;
-  static const int _mebibyte = 1024 * 1024;
-  static const int _gibibyte = 1024 * 1024 * 1024;
-
-  static String _formatBytes(int bytes) {
-    if (bytes < _kibibyte) return '$bytes B';
-    if (bytes < _mebibyte) {
-      return '${(bytes / _kibibyte).toStringAsFixed(1)} KB';
-    }
-    if (bytes < _gibibyte) {
-      return '${(bytes / _mebibyte).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / _gibibyte).toStringAsFixed(1)} GB';
-  }
 
   static String _formatPermissions(int mode) {
     final buffer = StringBuffer();

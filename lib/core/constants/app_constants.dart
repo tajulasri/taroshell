@@ -38,7 +38,21 @@ abstract final class AppConstants {
   // Animation durations (milliseconds)
   static const int animationFastMs = 150;
   static const int animationNormalMs = 300;
+  static const int animationSlowMs = 500;
 
   // Search debounce
   static const int searchDebounceMs = 300;
+
+  // Asset paths
+  static const String appLogoPath = 'assets/images/app_logo.png';
+
+  // Application directory
+  static const String appDirectoryName = '.taroshell';
+
+  // Network
+  static const int portMax = 65535;
+
+  // Border radii
+  static const double borderRadiusSmall = 8.0;
+  static const double borderRadiusMedium = 12.0;
 }

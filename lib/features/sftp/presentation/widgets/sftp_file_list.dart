@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:taroshell/core/theme/app_colors.dart';
 import 'package:taroshell/features/sftp/domain/entities/sftp_entry.dart';
 import 'package:taroshell/features/sftp/presentation/providers/sftp_provider.dart';
@@ -304,7 +305,7 @@ class _SftpFileListState extends State<SftpFileList> {
                     entry.formattedPermissions,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: textColor.withValues(alpha: 0.6),
-                      fontFamily: 'JetBrainsMono',
+                      fontFamily: AppConstants.defaultTerminalFontFamily,
                       fontSize: 11,
                     ),
                   ),

@@ -6,7 +6,9 @@ import 'package:window_manager/window_manager.dart';
 import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:taroshell/core/shortcuts/app_shortcuts.dart';
 import 'package:taroshell/core/theme/app_colors.dart';
+import 'package:taroshell/features/connections/presentation/widgets/server_form_dialog.dart';
 import 'package:taroshell/features/terminal/presentation/providers/terminal_provider.dart';
+import 'package:taroshell/shared/widgets/quick_connect_dialog.dart';
 import 'package:taroshell/shared/widgets/sidebar.dart';
 
 /// Status bar text shown when no SSH sessions are active.
@@ -26,7 +28,7 @@ const String _statusSessionPrefix = 'Session';
 /// - The main content area on the right
 /// - A dynamic status bar at the bottom reflecting connection state
 /// - Application-wide keyboard shortcuts
-class AppScaffold extends StatefulWidget {
+class AppScaffold extends ConsumerStatefulWidget {
   const AppScaffold({
     super.key,
     required this.currentPath,
@@ -40,10 +42,10 @@ class AppScaffold extends StatefulWidget {
   final Widget child;
 
   @override
-  State<AppScaffold> createState() => _AppScaffoldState();
+  ConsumerState<AppScaffold> createState() => _AppScaffoldState();
 }
 
-class _AppScaffoldState extends State<AppScaffold> {
+class _AppScaffoldState extends ConsumerState<AppScaffold> {
   final ValueNotifier<double> _sidebarWidth =
       ValueNotifier<double>(AppConstants.sidebarWidth);
 
@@ -51,6 +53,26 @@ class _AppScaffoldState extends State<AppScaffold> {
   void dispose() {
     _sidebarWidth.dispose();
     super.dispose();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Global shortcut handlers
+  // ---------------------------------------------------------------------------
+
+  Future<void> _openNewServerDialog() async {
+    await ServerFormDialog.show(context, ref);
+  }
+
+  Future<void> _openQuickConnectDialog() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const QuickConnectDialog(),
+    );
+  }
+
+  void _focusSidebarSearch() {
+    ref.read(sidebarSearchFocusNodeProvider).requestFocus();
   }
 
   // ---------------------------------------------------------------------------
@@ -74,6 +96,9 @@ class _AppScaffoldState extends State<AppScaffold> {
     final isDark = theme.brightness == Brightness.dark;
 
     return AppShortcutsWrapper(
+      onNewServer: _openNewServerDialog,
+      onQuickConnect: _openQuickConnectDialog,
+      onFocusSearch: _focusSidebarSearch,
       child: Scaffold(
         body: Column(
           children: [
@@ -145,7 +170,8 @@ class _AppScaffoldState extends State<AppScaffold> {
                 ),
               ),
             ),
-            const SizedBox(width: 78),
+            _TitleBarQuickConnectButton(isDark: isDark),
+            const SizedBox(width: 8),
           ],
         ),
       ),
@@ -164,6 +190,57 @@ class _AppScaffoldState extends State<AppScaffold> {
         child: Container(
           width: 4,
           color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Title Bar — Quick Connect action
+// =============================================================================
+
+/// Compact icon button in the title bar that opens the [QuickConnectDialog].
+///
+/// Placed on the right edge (opposite the macOS traffic lights) so the
+/// sidebar action row can stay focused on saved-server management.
+class _TitleBarQuickConnectButton extends StatelessWidget {
+  const _TitleBarQuickConnectButton({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = isDark
+        ? AppColors.darkOnSurface.withValues(alpha: 0.7)
+        : AppColors.lightOnSurface.withValues(alpha: 0.7);
+
+    return Tooltip(
+      message: 'Quick Connect',
+      child: SizedBox(
+        width: 32,
+        height: 28,
+        // Swallow the title bar's pan-to-drag gesture so the button stays
+        // clickable even though it sits inside a drag region.
+        child: GestureDetector(
+          onPanStart: (_) {},
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: () => showDialog<void>(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const QuickConnectDialog(),
+              ),
+              child: Icon(
+                Icons.flash_on_outlined,
+                size: 16,
+                color: iconColor,
+              ),
+            ),
+          ),
         ),
       ),
     );

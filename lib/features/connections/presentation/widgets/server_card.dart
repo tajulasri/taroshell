@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:taroshell/core/database/app_database.dart';
 import 'package:taroshell/core/theme/app_colors.dart';
 import 'package:taroshell/features/connections/domain/entities/server.dart';
@@ -226,7 +227,7 @@ class _ServerCardState extends State<ServerCard> {
                             ? AppColors.darkOnSurfaceMuted
                             : AppColors.lightOnSurfaceMuted,
                         fontSize: 11,
-                        fontFamily: 'JetBrainsMono',
+                        fontFamily: AppConstants.defaultTerminalFontFamily,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

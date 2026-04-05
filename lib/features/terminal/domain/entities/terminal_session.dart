@@ -1,4 +1,5 @@
 import 'package:dartssh2/dartssh2.dart';
+import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:xterm/xterm.dart';
 
 /// The lifecycle status of an SSH terminal session.
@@ -86,8 +87,7 @@ class TerminalSession {
   ///
   /// Format: `username@host:port` (port omitted when default 22).
   String get connectionString {
-    const defaultSshPort = 22;
-    final portSuffix = port != defaultSshPort ? ':$port' : '';
+    final portSuffix = port != AppConstants.defaultSshPort ? ':$port' : '';
     return '$username@$host$portSuffix';
   }
 

@@ -5,6 +5,7 @@ import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:taroshell/core/theme/app_colors.dart';
 import 'package:taroshell/features/terminal/presentation/providers/terminal_provider.dart';
 import 'package:taroshell/features/terminal/presentation/screens/terminal_screen.dart';
+import 'package:taroshell/shared/widgets/quick_connect_dialog.dart';
 
 /// Main connections content area displaying the terminal or welcome state.
 ///
@@ -19,12 +20,33 @@ class ConnectionsScreen extends ConsumerWidget {
     final hasActiveSessions = sessions.isNotEmpty;
 
     if (hasActiveSessions) {
-      return const TerminalScreen();
+      return TerminalScreen(
+        onQuickConnect: () => _showQuickConnect(context),
+        onChooseSavedServer: () => _showSidebarHint(context),
+      );
     }
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     return _buildWelcomeState(context, theme, isDark);
+  }
+
+  Future<void> _showQuickConnect(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const QuickConnectDialog(),
+    );
+  }
+
+  void _showSidebarHint(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Select a saved server from the sidebar.'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   Widget _buildWelcomeState(
@@ -43,15 +65,15 @@ class ConnectionsScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isDark
-                  ? const Color(0x1A6366F1)
-                  : const Color(0x1A4F46E5),
+                  ? AppColors.darkPrimaryAlpha10
+                  : AppColors.lightPrimaryAlpha10,
             ),
             child: Icon(
               Icons.terminal_rounded,
               size: 40,
               color: isDark
-                  ? const Color(0x996366F1)
-                  : const Color(0x994F46E5),
+                  ? AppColors.darkPrimaryAlpha60
+                  : AppColors.lightPrimaryAlpha60,
             ),
           ),
           const SizedBox(height: 24),
@@ -102,8 +124,14 @@ class ConnectionsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 _ShortcutHint(
+                  keys: _platformModifier(context, 'N', shift: true),
+                  description: 'Quick connect',
+                  theme: theme,
+                ),
+                const SizedBox(height: 6),
+                _ShortcutHint(
                   keys: _platformModifier(context, 'K'),
-                  description: 'Quick search',
+                  description: 'Search servers',
                   theme: theme,
                 ),
               ],
@@ -114,12 +142,20 @@ class ConnectionsScreen extends ConsumerWidget {
     );
   }
 
-  String _platformModifier(BuildContext context, String key) {
-    // macOS uses Cmd, other platforms use Ctrl.
+  String _platformModifier(
+    BuildContext context,
+    String key, {
+    bool shift = false,
+  }) {
+    // macOS uses Cmd (⌘), other platforms use Ctrl. Shift is rendered as ⇧
+    // on macOS to match native menu conventions.
     final platform = Theme.of(context).platform;
-    final modifier =
-        platform == TargetPlatform.macOS ? '\u2318' : 'Ctrl+';
-    return '$modifier$key';
+    final isMac = platform == TargetPlatform.macOS;
+    final modifier = isMac ? '\u2318' : 'Ctrl+';
+    final shiftModifier = shift ? (isMac ? '\u21e7' : 'Shift+') : '';
+    return isMac
+        ? '$shiftModifier$modifier$key'
+        : '$modifier$shiftModifier$key';
   }
 }
 

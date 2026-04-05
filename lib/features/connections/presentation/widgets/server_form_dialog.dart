@@ -6,21 +6,9 @@ import 'package:taroshell/core/database/app_database.dart';
 import 'package:taroshell/features/connections/domain/entities/server.dart';
 
 import 'package:taroshell/features/connections/presentation/providers/collection_provider.dart';
+import 'package:taroshell/features/connections/presentation/validators/server_form_validators.dart';
 import 'package:taroshell/features/connections/presentation/providers/server_provider.dart';
 import 'package:taroshell/features/keys/presentation/providers/key_provider.dart';
-
-// =============================================================================
-// Validation Constants
-// =============================================================================
-
-/// Validation boundaries for server form fields.
-abstract final class _FormLimits {
-  static const int portMin = 1;
-  static const int portMax = 65535;
-  static const int labelMaxLength = 200;
-  static const int hostMaxLength = 255;
-  static const int usernameMaxLength = 128;
-}
 
 /// Dialog for adding or editing an SSH server connection profile.
 ///
@@ -118,58 +106,6 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Validation
-  // ---------------------------------------------------------------------------
-
-  String? _validateLabel(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Label is required';
-    }
-    if (value.length > _FormLimits.labelMaxLength) {
-      return 'Label must be ${_FormLimits.labelMaxLength} characters or fewer';
-    }
-    return null;
-  }
-
-  String? _validateHost(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Host is required';
-    }
-    if (value.length > _FormLimits.hostMaxLength) {
-      return 'Host must be ${_FormLimits.hostMaxLength} characters or fewer';
-    }
-    // Basic format check: no spaces, at least one character
-    if (value.contains(' ')) {
-      return 'Host must not contain spaces';
-    }
-    return null;
-  }
-
-  String? _validatePort(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Port is required';
-    }
-    final port = int.tryParse(value.trim());
-    if (port == null) {
-      return 'Port must be a number';
-    }
-    if (port < _FormLimits.portMin || port > _FormLimits.portMax) {
-      return 'Port must be between ${_FormLimits.portMin} and ${_FormLimits.portMax}';
-    }
-    return null;
-  }
-
-  String? _validateUsername(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Username is required';
-    }
-    if (value.length > _FormLimits.usernameMaxLength) {
-      return 'Username must be ${_FormLimits.usernameMaxLength} characters or fewer';
-    }
-    return null;
-  }
-
-  // ---------------------------------------------------------------------------
   // Submission
   // ---------------------------------------------------------------------------
 
@@ -256,7 +192,7 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
                     hintText: 'My Production Server',
                     prefixIcon: Icon(Icons.label_outlined, size: 20),
                   ),
-                  validator: _validateLabel,
+                  validator: ServerFormValidators.label,
                   textInputAction: TextInputAction.next,
                   autofocus: !_isEditMode,
                 ),
@@ -275,7 +211,7 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
                           hintText: '192.168.1.1 or example.com',
                           prefixIcon: Icon(Icons.dns_outlined, size: 20),
                         ),
-                        validator: _validateHost,
+                        validator: ServerFormValidators.host,
                         textInputAction: TextInputAction.next,
                       ),
                     ),
@@ -287,7 +223,7 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
                         decoration: const InputDecoration(
                           labelText: 'Port',
                         ),
-                        validator: _validatePort,
+                        validator: ServerFormValidators.port,
                         keyboardType: TextInputType.number,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
@@ -308,7 +244,7 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
                     hintText: 'root',
                     prefixIcon: Icon(Icons.person_outlined, size: 20),
                   ),
-                  validator: _validateUsername,
+                  validator: ServerFormValidators.username,
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),

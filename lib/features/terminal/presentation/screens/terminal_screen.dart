@@ -33,11 +33,17 @@ enum _ContentPanel {
 class TerminalScreen extends ConsumerStatefulWidget {
   const TerminalScreen({
     super.key,
-    this.onAddSession,
+    this.onQuickConnect,
+    this.onChooseSavedServer,
   });
 
-  /// Callback invoked when the user requests a new connection (from the tab bar "+").
-  final VoidCallback? onAddSession;
+  /// Callback invoked when the user selects "Quick Connect" from the
+  /// tab bar `+` menu.
+  final VoidCallback? onQuickConnect;
+
+  /// Callback invoked when the user selects "Choose Saved Server…" from
+  /// the tab bar `+` menu.
+  final VoidCallback? onChooseSavedServer;
 
   @override
   ConsumerState<TerminalScreen> createState() => _TerminalScreenState();
@@ -60,7 +66,10 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
     return Column(
       children: [
         // Tab bar
-        TerminalTabBar(onAddSession: widget.onAddSession),
+        TerminalTabBar(
+          onQuickConnect: widget.onQuickConnect,
+          onChooseSavedServer: widget.onChooseSavedServer,
+        ),
 
         // Content area — varies based on session status.
         Expanded(

@@ -9,21 +9,33 @@ import 'package:taroshell/features/terminal/presentation/providers/terminal_prov
 /// Height of each tab item in the terminal tab bar.
 const double _tabHeight = 36.0;
 
+/// Sentinel identifier for ephemeral (quick-connect) sessions whose
+/// [TerminalSession.serverId] is zero because they are not backed by
+/// a persisted [ServerEntity] row.
+const int _ephemeralSessionServerId = 0;
+
 /// Custom tab bar displaying active SSH sessions.
 ///
 /// Features:
 /// - Each tab shows the server label with a close button.
 /// - The active tab is highlighted with an accent-colored bottom indicator.
 /// - Tabs are reorderable via drag-and-drop.
-/// - A trailing "+" button allows opening new connections.
+/// - A trailing "+" button opens a menu offering Quick Connect or a saved
+///   server picker.
 class TerminalTabBar extends ConsumerWidget {
   const TerminalTabBar({
     super.key,
-    this.onAddSession,
+    this.onQuickConnect,
+    this.onChooseSavedServer,
   });
 
-  /// Callback invoked when the "+" (add session) button is pressed.
-  final VoidCallback? onAddSession;
+  /// Callback invoked when the user selects "Quick Connect" from the
+  /// `+` button menu.
+  final VoidCallback? onQuickConnect;
+
+  /// Callback invoked when the user selects "Choose Saved Server…" from
+  /// the `+` button menu.
+  final VoidCallback? onChooseSavedServer;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -113,37 +125,61 @@ class TerminalTabBar extends ConsumerWidget {
   }
 
   Widget _buildAddButton(BuildContext context, bool isDark) {
-    return Tooltip(
-      message: 'New connection',
-      child: InkWell(
-        onTap: onAddSession,
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          width: _tabHeight,
-          height: _tabHeight,
-          alignment: Alignment.center,
-          child: Icon(
-            Icons.add,
-            size: 18,
-            color: isDark
-                ? AppColors.darkOnSurface.withValues(alpha: 0.7)
-                : AppColors.lightOnSurface.withValues(alpha: 0.7),
+    final iconColor = isDark
+        ? AppColors.darkOnSurface.withValues(alpha: 0.7)
+        : AppColors.lightOnSurface.withValues(alpha: 0.7);
+
+    return PopupMenuButton<_AddSessionAction>(
+      tooltip: 'New connection',
+      position: PopupMenuPosition.under,
+      onSelected: (action) {
+        switch (action) {
+          case _AddSessionAction.quickConnect:
+            onQuickConnect?.call();
+          case _AddSessionAction.chooseSavedServer:
+            onChooseSavedServer?.call();
+        }
+      },
+      itemBuilder: (_) => <PopupMenuEntry<_AddSessionAction>>[
+        if (onQuickConnect != null)
+          const PopupMenuItem(
+            value: _AddSessionAction.quickConnect,
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.flash_on_outlined, size: 18),
+              title: Text('Quick Connect'),
+            ),
           ),
-        ),
+        if (onChooseSavedServer != null)
+          const PopupMenuItem(
+            value: _AddSessionAction.chooseSavedServer,
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.dns_outlined, size: 18),
+              title: Text('Choose Saved Server…'),
+            ),
+          ),
+      ],
+      child: SizedBox(
+        width: _tabHeight,
+        height: _tabHeight,
+        child: Icon(Icons.add, size: 18, color: iconColor),
       ),
     );
   }
 }
+
+/// Actions offered in the `+` button popup menu.
+enum _AddSessionAction { quickConnect, chooseSavedServer }
 
 Future<bool> _showDisconnectConfirmDialog(
   BuildContext context,
   TerminalSession session,
 ) async {
   final theme = Theme.of(context);
-  final portSuffix =
-      session.port != AppConstants.defaultSshPort ? ':${session.port}' : '';
-  final connectionString =
-      '${session.username}@${session.host}$portSuffix';
+  final connectionString = session.connectionString;
 
   final result = await showDialog<bool>(
     context: context,
@@ -272,6 +308,18 @@ class _SessionTab extends StatelessWidget {
                 maxLines: 1,
               ),
             ),
+            // Ephemeral (unsaved) session badge.
+            if (session.serverId == _ephemeralSessionServerId) ...[
+              const SizedBox(width: 6),
+              Tooltip(
+                message: 'Unsaved session',
+                child: Icon(
+                  Icons.flash_on_outlined,
+                  size: 12,
+                  color: textColor.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
             const SizedBox(width: 6),
 
             // Close button

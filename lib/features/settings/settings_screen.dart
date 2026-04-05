@@ -395,7 +395,7 @@ class _DefaultPortSetting extends StatelessWidget {
           ),
           onChanged: (value) {
             final parsed = int.tryParse(value);
-            if (parsed != null && parsed > 0 && parsed <= 65535) {
+            if (parsed != null && parsed > 0 && parsed <= AppConstants.portMax) {
               ref.read(defaultSshPortProvider.notifier).state = parsed;
             }
           },
@@ -544,7 +544,7 @@ class _AboutSection extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Image.asset(
-                      'assets/images/app_logo.png',
+                      AppConstants.appLogoPath,
                       width: 72,
                       height: 72,
                     ),

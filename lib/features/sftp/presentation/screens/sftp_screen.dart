@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:taroshell/core/theme/app_colors.dart';
 import 'package:taroshell/features/sftp/data/repositories/sftp_repository_impl.dart';
 import 'package:taroshell/features/sftp/domain/entities/sftp_entry.dart';
@@ -220,7 +221,7 @@ class _SftpScreenState extends ConsumerState<SftpScreen> {
                       : AppColors.lightOnSurface)
                   .withValues(alpha: 0.4),
               fontSize: 10,
-              fontFamily: 'JetBrainsMono',
+              fontFamily: AppConstants.defaultTerminalFontFamily,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -539,7 +540,7 @@ class _SftpScreenState extends ConsumerState<SftpScreen> {
             const SizedBox(height: 4),
             Text(
               'Current: ${entry.formattedPermissions}',
-              style: const TextStyle(fontFamily: 'JetBrainsMono', fontSize: 12),
+              style: const TextStyle(fontFamily: AppConstants.defaultTerminalFontFamily, fontSize: 12),
             ),
             const SizedBox(height: 16),
             TextField(

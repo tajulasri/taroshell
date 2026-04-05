@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:taroshell/core/database/app_database.dart';
 import 'package:taroshell/core/theme/app_colors.dart';
 import 'package:taroshell/features/keys/domain/entities/ssh_key.dart';
@@ -80,7 +81,7 @@ class KeyListTile extends StatelessWidget {
                   Text(
                     _truncatedFingerprint,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      fontFamily: 'JetBrainsMono',
+                      fontFamily: AppConstants.defaultTerminalFontFamily,
                       fontSize: 11,
                       color: isDark
                           ? AppColors.darkOnSurface.withValues(alpha: 0.6)

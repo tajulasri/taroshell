@@ -1,3 +1,5 @@
+import 'package:taroshell/core/constants/app_constants.dart';
+
 /// Domain entity representing a trusted remote host key record.
 ///
 /// Follows the Trust-On-First-Use (TOFU) model: the first time a host is
@@ -39,7 +41,6 @@ class KnownHostEntity {
   ///
   /// Format: `host:port` (port omitted when default 22).
   String get displayHost {
-    const defaultSshPort = 22;
-    return port != defaultSshPort ? '$host:$port' : host;
+    return port != AppConstants.defaultSshPort ? '$host:$port' : host;
   }
 }

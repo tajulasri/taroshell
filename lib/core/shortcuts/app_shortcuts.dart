@@ -7,9 +7,19 @@ import 'package:taroshell/core/router/app_router.dart';
 // Intents
 // =============================================================================
 
-/// Intent to open a new connection tab.
-class NewConnectionIntent extends Intent {
-  const NewConnectionIntent();
+/// Intent to open the "Add Server" dialog.
+class NewServerIntent extends Intent {
+  const NewServerIntent();
+}
+
+/// Intent to open the Quick Connect dialog for an ephemeral session.
+class QuickConnectIntent extends Intent {
+  const QuickConnectIntent();
+}
+
+/// Intent to focus the sidebar search field.
+class FocusSearchIntent extends Intent {
+  const FocusSearchIntent();
 }
 
 /// Intent to close the current active tab.
@@ -38,16 +48,43 @@ class OpenSettingsIntent extends Intent {
 
 /// Global keyboard shortcut bindings for TaroShell.
 ///
-/// Bindings follow platform conventions (Ctrl on Linux/Windows, Meta on macOS
-/// is handled automatically by [LogicalKeyboardKey]).
+/// Each logical binding is registered twice — once with `control` (for
+/// Linux/Windows) and once with `meta` (for macOS `⌘`) — so the same
+/// intent fires regardless of platform without a runtime check.
 final Map<ShortcutActivator, Intent> appShortcuts = {
-  const SingleActivator(LogicalKeyboardKey.keyT, control: true):
-      const NewConnectionIntent(),
+  // New server (saved profile)
+  const SingleActivator(LogicalKeyboardKey.keyN, control: true):
+      const NewServerIntent(),
+  const SingleActivator(LogicalKeyboardKey.keyN, meta: true):
+      const NewServerIntent(),
+
+  // Quick connect (ephemeral session)
+  const SingleActivator(LogicalKeyboardKey.keyN, control: true, shift: true):
+      const QuickConnectIntent(),
+  const SingleActivator(LogicalKeyboardKey.keyN, meta: true, shift: true):
+      const QuickConnectIntent(),
+
+  // Focus sidebar search
+  const SingleActivator(LogicalKeyboardKey.keyK, control: true):
+      const FocusSearchIntent(),
+  const SingleActivator(LogicalKeyboardKey.keyK, meta: true):
+      const FocusSearchIntent(),
+
+  // Close current tab
   const SingleActivator(LogicalKeyboardKey.keyW, control: true):
       const CloseTabIntent(),
+  const SingleActivator(LogicalKeyboardKey.keyW, meta: true):
+      const CloseTabIntent(),
+
+  // Previous / next tab
   const SingleActivator(
     LogicalKeyboardKey.arrowLeft,
     control: true,
+    shift: true,
+  ): const PreviousTabIntent(),
+  const SingleActivator(
+    LogicalKeyboardKey.arrowLeft,
+    meta: true,
     shift: true,
   ): const PreviousTabIntent(),
   const SingleActivator(
@@ -55,7 +92,16 @@ final Map<ShortcutActivator, Intent> appShortcuts = {
     control: true,
     shift: true,
   ): const NextTabIntent(),
+  const SingleActivator(
+    LogicalKeyboardKey.arrowRight,
+    meta: true,
+    shift: true,
+  ): const NextTabIntent(),
+
+  // Settings
   const SingleActivator(LogicalKeyboardKey.comma, control: true):
+      const OpenSettingsIntent(),
+  const SingleActivator(LogicalKeyboardKey.comma, meta: true):
       const OpenSettingsIntent(),
 };
 
@@ -72,7 +118,9 @@ class AppShortcutsWrapper extends StatelessWidget {
   const AppShortcutsWrapper({
     super.key,
     required this.child,
-    this.onNewConnection,
+    this.onNewServer,
+    this.onQuickConnect,
+    this.onFocusSearch,
     this.onCloseTab,
     this.onPreviousTab,
     this.onNextTab,
@@ -81,16 +129,22 @@ class AppShortcutsWrapper extends StatelessWidget {
   /// The child widget tree to wrap with shortcuts.
   final Widget child;
 
-  /// Callback invoked when the user presses Ctrl+T.
-  final VoidCallback? onNewConnection;
+  /// Callback invoked on Ctrl/⌘+N — open the Add Server dialog.
+  final VoidCallback? onNewServer;
 
-  /// Callback invoked when the user presses Ctrl+W.
+  /// Callback invoked on Ctrl/⌘+Shift+N — open the Quick Connect dialog.
+  final VoidCallback? onQuickConnect;
+
+  /// Callback invoked on Ctrl/⌘+K — focus the sidebar search field.
+  final VoidCallback? onFocusSearch;
+
+  /// Callback invoked on Ctrl/⌘+W — close the current terminal tab.
   final VoidCallback? onCloseTab;
 
-  /// Callback invoked when the user presses Ctrl+Shift+Left.
+  /// Callback invoked on Ctrl/⌘+Shift+Left — switch to the previous tab.
   final VoidCallback? onPreviousTab;
 
-  /// Callback invoked when the user presses Ctrl+Shift+Right.
+  /// Callback invoked on Ctrl/⌘+Shift+Right — switch to the next tab.
   final VoidCallback? onNextTab;
 
   @override
@@ -99,9 +153,21 @@ class AppShortcutsWrapper extends StatelessWidget {
       shortcuts: appShortcuts,
       child: Actions(
         actions: {
-          NewConnectionIntent: CallbackAction<NewConnectionIntent>(
+          NewServerIntent: CallbackAction<NewServerIntent>(
             onInvoke: (_) {
-              onNewConnection?.call();
+              onNewServer?.call();
+              return null;
+            },
+          ),
+          QuickConnectIntent: CallbackAction<QuickConnectIntent>(
+            onInvoke: (_) {
+              onQuickConnect?.call();
+              return null;
+            },
+          ),
+          FocusSearchIntent: CallbackAction<FocusSearchIntent>(
+            onInvoke: (_) {
+              onFocusSearch?.call();
               return null;
             },
           ),

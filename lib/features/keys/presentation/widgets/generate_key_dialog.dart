@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:taroshell/core/database/app_database.dart';
 import 'package:taroshell/core/theme/app_colors.dart';
 import 'package:taroshell/features/keys/domain/entities/ssh_key.dart';
@@ -320,7 +321,7 @@ class _GenerateKeyDialogState extends ConsumerState<GenerateKeyDialog> {
           child: SelectableText(
             _generatedKey!.publicKey,
             style: theme.textTheme.bodySmall?.copyWith(
-              fontFamily: 'JetBrainsMono',
+              fontFamily: AppConstants.defaultTerminalFontFamily,
               fontSize: 11,
             ),
             maxLines: 4,

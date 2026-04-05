@@ -150,8 +150,8 @@ abstract final class SshKeyUtils {
 
     // Build OpenSSH public key blob
     final blobBuilder = BytesBuilder();
-    _writeString(blobBuilder, 'ssh-ed25519');
-    _writeBytes(blobBuilder, publicKeyBytes);
+    writeString(blobBuilder, 'ssh-ed25519');
+    writeBytes(blobBuilder, publicKeyBytes);
     final publicKeyBlob = blobBuilder.toBytes();
 
     final base64Public = base64.encode(publicKeyBlob);
@@ -175,9 +175,9 @@ abstract final class SshKeyUtils {
 
   static List<int> _encodeRsaPublicKey(RSAPublicKey key) {
     final builder = BytesBuilder();
-    _writeString(builder, 'ssh-rsa');
-    _writeMpInt(builder, key.publicExponent!);
-    _writeMpInt(builder, key.modulus!);
+    writeString(builder, 'ssh-rsa');
+    writeMpInt(builder, key.publicExponent!);
+    writeMpInt(builder, key.modulus!);
     return builder.toBytes();
   }
 
@@ -228,23 +228,27 @@ abstract final class SshKeyUtils {
     return lines.join('\n');
   }
 
-  static void _writeString(BytesBuilder builder, String value) {
+  /// Writes a length-prefixed UTF-8 string to [builder].
+  static void writeString(BytesBuilder builder, String value) {
     final bytes = utf8.encode(value);
-    _writeBytes(builder, Uint8List.fromList(bytes));
+    writeBytes(builder, Uint8List.fromList(bytes));
   }
 
-  static void _writeBytes(BytesBuilder builder, Uint8List bytes) {
+  /// Writes a length-prefixed byte array to [builder].
+  static void writeBytes(BytesBuilder builder, Uint8List bytes) {
     final length = ByteData(4)..setUint32(0, bytes.length);
     builder.add(length.buffer.asUint8List());
     builder.add(bytes);
   }
 
-  static void _writeMpInt(BytesBuilder builder, BigInt value) {
-    final bytes = _bigIntToBytes(value);
-    _writeBytes(builder, bytes);
+  /// Writes a length-prefixed SSH mpint to [builder].
+  static void writeMpInt(BytesBuilder builder, BigInt value) {
+    final bytes = bigIntToBytes(value);
+    writeBytes(builder, bytes);
   }
 
-  static Uint8List _bigIntToBytes(BigInt value) {
+  /// Converts a [BigInt] to a big-endian byte array suitable for SSH encoding.
+  static Uint8List bigIntToBytes(BigInt value) {
     final hexString = value.toRadixString(16);
     final paddedHex = hexString.length.isOdd ? '0$hexString' : hexString;
     final bytes = <int>[];

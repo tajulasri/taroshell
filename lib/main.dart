@@ -132,7 +132,7 @@ Future<void> _writeKeychainKey(String key) async {
 
 File get _keyFile {
   final home = Platform.environment['HOME'] ?? '';
-  return File(p.join(home, '.taroshell', '.encryption_key'));
+  return File(p.join(home, AppConstants.appDirectoryName, '.encryption_key'));
 }
 
 Future<String?> _readFileKey() async {

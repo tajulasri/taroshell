@@ -10,6 +10,7 @@ import 'package:xterm/xterm.dart';
 
 import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:taroshell/core/database/app_database.dart';
+import 'package:taroshell/core/theme/app_colors.dart';
 import 'package:taroshell/core/utils/app_logger.dart';
 import 'package:taroshell/features/connections/domain/entities/server.dart';
 import 'package:taroshell/features/known_hosts/data/daos/known_host_dao.dart';
@@ -414,7 +415,7 @@ class SshService {
       builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.amber.shade700),
+            const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
             const SizedBox(width: 8),
             const Text('Host Key Changed'),
           ],
@@ -445,7 +446,7 @@ class SshService {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber.shade700,
+              backgroundColor: AppColors.warning,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Accept New Key'),
@@ -470,7 +471,7 @@ class SshService {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: AppColors.overlayLight,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(

@@ -312,8 +312,8 @@ _Ed25519KeyData _extractEd25519KeyData(String pem) {
 
   // Build OpenSSH public key blob.
   final blobBuilder = BytesBuilder();
-  _writeStringToBlob(blobBuilder, 'ssh-ed25519');
-  _writeBytesToBlob(blobBuilder, publicKeyBytes);
+  SshKeyUtils.writeString(blobBuilder, 'ssh-ed25519');
+  SshKeyUtils.writeBytes(blobBuilder, publicKeyBytes);
   final publicKeyBlob = Uint8List.fromList(blobBuilder.toBytes());
 
   final base64Public = base64.encode(publicKeyBlob);
@@ -370,42 +370,9 @@ RSAPublicKey _parseRsaPublicKeyFromPem(String pem) {
 /// Encodes an RSA public key into the OpenSSH binary blob format.
 Uint8List _encodeRsaPublicKeyBlob(RSAPublicKey publicKey) {
   final builder = BytesBuilder();
-  _writeStringToBlob(builder, 'ssh-rsa');
-  _writeMpIntToBlob(builder, publicKey.publicExponent!);
-  _writeMpIntToBlob(builder, publicKey.modulus!);
+  SshKeyUtils.writeString(builder, 'ssh-rsa');
+  SshKeyUtils.writeMpInt(builder, publicKey.publicExponent!);
+  SshKeyUtils.writeMpInt(builder, publicKey.modulus!);
   return Uint8List.fromList(builder.toBytes());
 }
 
-// ---------------------------------------------------------------------------
-// Blob encoding helpers (mirrored from SshKeyUtils for use at file scope)
-// ---------------------------------------------------------------------------
-
-void _writeStringToBlob(BytesBuilder builder, String value) {
-  final bytes = utf8.encode(value);
-  _writeBytesToBlob(builder, Uint8List.fromList(bytes));
-}
-
-void _writeBytesToBlob(BytesBuilder builder, Uint8List bytes) {
-  final length = ByteData(4)..setUint32(0, bytes.length);
-  builder.add(length.buffer.asUint8List());
-  builder.add(bytes);
-}
-
-void _writeMpIntToBlob(BytesBuilder builder, BigInt value) {
-  final bytes = _bigIntToBytes(value);
-  _writeBytesToBlob(builder, bytes);
-}
-
-Uint8List _bigIntToBytes(BigInt value) {
-  final hexString = value.toRadixString(16);
-  final paddedHex = hexString.length.isOdd ? '0$hexString' : hexString;
-  final bytes = <int>[];
-  for (var i = 0; i < paddedHex.length; i += 2) {
-    bytes.add(int.parse(paddedHex.substring(i, i + 2), radix: 16));
-  }
-  // SSH mpint requires a leading zero byte if the high bit is set.
-  if (bytes.isNotEmpty && (bytes[0] & 0x80) != 0) {
-    bytes.insert(0, 0);
-  }
-  return Uint8List.fromList(bytes);
-}

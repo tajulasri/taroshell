@@ -9,6 +9,7 @@ class SearchField extends StatefulWidget {
   const SearchField({
     super.key,
     this.controller,
+    this.focusNode,
     this.onChanged,
     this.onClear,
     this.hintText = 'Search...',
@@ -17,6 +18,10 @@ class SearchField extends StatefulWidget {
 
   /// Optional external controller. If not provided, an internal one is used.
   final TextEditingController? controller;
+
+  /// Optional external focus node. When provided, callers can programmatically
+  /// request focus (e.g. from a global keyboard shortcut).
+  final FocusNode? focusNode;
 
   /// Callback fired on every text change (debounced externally if needed).
   final ValueChanged<String>? onChanged;
@@ -98,6 +103,7 @@ class _SearchFieldState extends State<SearchField> {
       height: AppConstants.titleBarHeight,
       child: TextField(
         controller: _controller,
+        focusNode: widget.focusNode,
         autofocus: widget.autofocus,
         style: theme.textTheme.bodyMedium,
         textAlignVertical: TextAlignVertical.center,

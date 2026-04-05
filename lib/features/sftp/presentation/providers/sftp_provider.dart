@@ -6,6 +6,9 @@ import 'package:taroshell/features/sftp/domain/repositories/sftp_repository.dart
 import 'package:taroshell/features/terminal/domain/entities/terminal_session.dart';
 import 'package:taroshell/features/terminal/presentation/providers/terminal_provider.dart';
 
+export 'package:taroshell/features/settings/presentation/providers/settings_provider.dart'
+    show showHiddenFilesProvider;
+
 // =============================================================================
 // Repository provider (keyed by session ID)
 // =============================================================================
@@ -51,9 +54,6 @@ final forwardHistoryProvider =
 // =============================================================================
 // UI state
 // =============================================================================
-
-/// Whether hidden files (names starting with ".") should be displayed.
-final showHiddenFilesProvider = StateProvider<bool>((ref) => false);
 
 /// Column used for sorting the file list.
 enum SftpSortColumn {

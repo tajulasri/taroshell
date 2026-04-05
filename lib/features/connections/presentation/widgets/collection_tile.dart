@@ -46,6 +46,7 @@ class CollectionTile extends ConsumerStatefulWidget {
     super.key,
     required this.collection,
     this.selectedServerId,
+    this.searchQuery = '',
     this.onServerTap,
     this.onServerEdit,
     this.onServerDuplicate,
@@ -61,6 +62,11 @@ class CollectionTile extends ConsumerStatefulWidget {
 
   /// The currently selected server ID, if any.
   final int? selectedServerId;
+
+  /// Lower-cased sidebar search query. When non-empty the server list is
+  /// filtered to matches on label / host / username and the collection is
+  /// forced-expanded so results are visible.
+  final String searchQuery;
 
   /// Called when a server within this collection is tapped.
   final ValueChanged<ServerEntity>? onServerTap;
@@ -158,6 +164,12 @@ class _CollectionTileState extends ConsumerState<CollectionTile> {
     }
   }
 
+  bool _matchesSearch(ServerEntity server, String query) {
+    return server.label.toLowerCase().contains(query) ||
+        server.host.toLowerCase().contains(query) ||
+        server.username.toLowerCase().contains(query);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -165,6 +177,21 @@ class _CollectionTileState extends ConsumerState<CollectionTile> {
       serversByCollectionProvider(widget.collection.id),
     );
     final color = _parseCollectionColor();
+
+    // When a search is active, force expansion so results are visible
+    // without requiring the user to toggle each collection manually, and
+    // hide the collection entirely if none of its servers match so the
+    // sidebar collapses down to just the relevant results.
+    final isSearching = widget.searchQuery.isNotEmpty;
+    final expanded = isSearching || _isExpanded;
+
+    if (isSearching) {
+      final list = servers.valueOrNull;
+      if (list != null &&
+          !list.any((s) => _matchesSearch(s, widget.searchQuery))) {
+        return const SizedBox.shrink();
+      }
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -183,7 +210,7 @@ class _CollectionTileState extends ConsumerState<CollectionTile> {
                 children: [
                   // Expand/collapse chevron
                   AnimatedRotation(
-                    turns: _isExpanded ? 0.25 : 0.0,
+                    turns: expanded ? 0.25 : 0.0,
                     duration: const Duration(milliseconds: 150),
                     child: Icon(
                       Icons.chevron_right_rounded,
@@ -265,28 +292,38 @@ class _CollectionTileState extends ConsumerState<CollectionTile> {
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
-          child: _isExpanded
+          child: expanded
               ? servers.when(
-                  data: (list) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: list
-                        .map(
-                          (server) => ServerCard(
-                            server: server,
-                            isSelected:
-                                server.id == widget.selectedServerId,
-                            onTap: () =>
-                                widget.onServerTap?.call(server),
-                            onEdit: () =>
-                                widget.onServerEdit?.call(server),
-                            onDuplicate: () =>
-                                widget.onServerDuplicate?.call(server),
-                            onDelete: () =>
-                                widget.onServerDelete?.call(server),
-                          ),
-                        )
-                        .toList(),
-                  ),
+                  data: (list) {
+                    final filtered = isSearching
+                        ? list
+                            .where((s) => _matchesSearch(s, widget.searchQuery))
+                            .toList()
+                        : list;
+                    if (filtered.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: filtered
+                          .map(
+                            (server) => ServerCard(
+                              server: server,
+                              isSelected:
+                                  server.id == widget.selectedServerId,
+                              onTap: () =>
+                                  widget.onServerTap?.call(server),
+                              onEdit: () =>
+                                  widget.onServerEdit?.call(server),
+                              onDuplicate: () =>
+                                  widget.onServerDuplicate?.call(server),
+                              onDelete: () =>
+                                  widget.onServerDelete?.call(server),
+                            ),
+                          )
+                          .toList(),
+                    );
+                  },
                   loading: () => const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Center(

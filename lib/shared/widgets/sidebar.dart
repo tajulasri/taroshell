@@ -1,13 +1,11 @@
 import 'dart:async';
 
-import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:taroshell/core/database/app_database.dart';
 import 'package:taroshell/core/router/app_router.dart';
-import 'package:taroshell/core/utils/app_logger.dart';
 import 'package:taroshell/core/theme/app_colors.dart';
 import 'package:taroshell/features/connections/domain/entities/server.dart';
 import 'package:taroshell/features/connections/domain/entities/server_collection.dart';
@@ -18,19 +16,30 @@ import 'package:taroshell/features/connections/presentation/widgets/collection_t
 import 'package:taroshell/features/connections/presentation/widgets/recent_connections_tile.dart';
 import 'package:taroshell/features/connections/presentation/widgets/server_card.dart';
 import 'package:taroshell/features/connections/presentation/widgets/server_form_dialog.dart';
-import 'package:taroshell/features/keys/presentation/providers/key_provider.dart';
 import 'package:taroshell/features/terminal/domain/entities/terminal_session.dart';
-import 'package:taroshell/features/terminal/domain/services/ssh_service.dart';
 import 'package:taroshell/features/terminal/presentation/providers/terminal_provider.dart';
 import 'package:taroshell/features/terminal/presentation/screens/terminal_screen.dart';
-import 'package:taroshell/features/terminal/presentation/widgets/password_prompt_dialog.dart';
+import 'package:taroshell/features/terminal/presentation/services/server_connect_coordinator.dart';
 import 'package:taroshell/shared/widgets/search_field.dart';
 
 /// Provider tracking the currently selected server ID in the sidebar.
 final selectedServerIdProvider = StateProvider<int?>((ref) => null);
 
-/// Provider tracking the current sidebar search query.
-final _sidebarSearchQueryProvider = StateProvider<String>((ref) => '');
+/// Provider tracking the current sidebar search query (lower-cased).
+///
+/// Consumed by the sidebar itself and by [CollectionTile] so that search
+/// results span ungrouped servers *and* servers nested inside collections.
+final sidebarSearchQueryProvider = StateProvider<String>((ref) => '');
+
+/// Shared [FocusNode] for the sidebar search field.
+///
+/// Exposed as a provider so global shortcuts (e.g. ⌘K / Ctrl+K) can focus
+/// the field without threading a key or callback through the widget tree.
+final sidebarSearchFocusNodeProvider = Provider<FocusNode>((ref) {
+  final node = FocusNode(debugLabel: 'SidebarSearchField');
+  ref.onDispose(node.dispose);
+  return node;
+});
 
 /// Debounce duration for the sidebar search field.
 const Duration _searchDebounceDuration = Duration(milliseconds: 300);
@@ -68,7 +77,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
   void _onSearchChanged(String query) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(_searchDebounceDuration, () {
-      ref.read(_sidebarSearchQueryProvider.notifier).state = query;
+      ref.read(sidebarSearchQueryProvider.notifier).state = query;
     });
   }
 
@@ -90,7 +99,12 @@ class _SidebarState extends ConsumerState<Sidebar> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: SearchField(
               hintText: 'Search servers...',
+              focusNode: ref.watch(sidebarSearchFocusNodeProvider),
               onChanged: _onSearchChanged,
+              onClear: () {
+                _searchDebounce?.cancel();
+                ref.read(sidebarSearchQueryProvider.notifier).state = '';
+              },
             ),
           ),
 
@@ -121,7 +135,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: Image.asset(
-              'assets/images/app_logo.png',
+              AppConstants.appLogoPath,
               width: 24,
               height: 24,
             ),
@@ -248,7 +262,7 @@ class _SidebarServerListState extends ConsumerState<_SidebarServerList> {
     final ungroupedServers = ref.watch(serversByCollectionProvider(null));
     final recentHistory = ref.watch(recentHistoryProvider);
     final selectedServerId = ref.watch(selectedServerIdProvider);
-    final searchQuery = ref.watch(_sidebarSearchQueryProvider).toLowerCase();
+    final searchQuery = ref.watch(sidebarSearchQueryProvider).toLowerCase();
 
     // Listen for retry connection requests from the terminal screen.
     ref.listen<int?>(retryConnectionProvider, (previous, serverId) {
@@ -284,6 +298,7 @@ class _SidebarServerListState extends ConsumerState<_SidebarServerList> {
                   (collection) => CollectionTile(
                     collection: collection,
                     selectedServerId: selectedServerId,
+                    searchQuery: searchQuery,
                     onServerTap: (server) => _onServerTap(context, ref, server),
                     onServerEdit: (server) =>
                         _onServerEdit(context, ref, server),
@@ -528,10 +543,8 @@ class _SidebarServerListState extends ConsumerState<_SidebarServerList> {
     final confirmed = await _showConnectConfirmDialog(context, server);
     if (!confirmed || !context.mounted) return;
 
-    _onServerConnect(context, ref, server);
+    await connectServer(context, ref, server);
   }
-
-  static final _log = AppLogger.ssh;
 
   /// Handles a retry request from an errored terminal tab.
   ///
@@ -543,140 +556,6 @@ class _SidebarServerListState extends ConsumerState<_SidebarServerList> {
     if (server == null || !context.mounted) return;
 
     await _onServerTap(context, ref, server);
-  }
-
-  Future<void> _onServerConnect(
-    BuildContext context,
-    WidgetRef ref,
-    ServerEntity server,
-  ) async {
-    _log.i(
-      'Initiating connection — server="${server.label}", '
-      'authType=${server.authType.name}, keyId=${server.sshKeyId}',
-    );
-
-    // Resolve credentials based on auth type.
-    String? password;
-    SSHKeyPair? keyPair;
-
-    try {
-      switch (server.authType) {
-        case AuthType.password:
-          if (!context.mounted) return;
-          password = await PasswordPromptDialog.show(context);
-          if (password == null) return; // User cancelled.
-
-        case AuthType.key:
-          final pem = await _decryptStoredKey(ref, server.sshKeyId);
-          keyPair = _parseKeyPair(pem);
-          // If the key is passphrase-protected despite authType being `key`,
-          // fall through to prompt for passphrase below.
-          if (keyPair == null) {
-            if (!context.mounted) return;
-            final passphrase = await PasswordPromptDialog.show(
-              context,
-              isPassphrase: true,
-            );
-            if (passphrase == null) return;
-            keyPair = _parseKeyPair(pem, passphrase: passphrase);
-          }
-
-        case AuthType.keyWithPassphrase:
-          final pem = await _decryptStoredKey(ref, server.sshKeyId);
-          if (!context.mounted) return;
-          final passphrase = await PasswordPromptDialog.show(
-            context,
-            isPassphrase: true,
-          );
-          if (passphrase == null) return; // User cancelled.
-          keyPair = _parseKeyPair(pem, passphrase: passphrase);
-      }
-
-      if (!context.mounted) return;
-
-      // Navigate to connections route immediately so the user sees the tab.
-      context.go(AppRoutes.connections);
-
-      // Create pending tab and start SSH connection in background.
-      // Errors are handled inline in the tab (no snackbar needed).
-      connectToServer(
-        ref: ref,
-        server: server,
-        password: password,
-        keyPair: keyPair,
-        context: context,
-      );
-    } catch (e, st) {
-      // Credential resolution errors (key decryption, parse failures)
-      // happen before the pending tab is created, so show a snackbar.
-      _log.e('Credential resolution failed for server="${server.label}"', e, st);
-
-      if (context.mounted) {
-        final message = switch (e) {
-          SshAuthenticationException(:final message) => message,
-          _ => 'Failed to resolve credentials: $e',
-        };
-        _showErrorSnackBar(context, message);
-      }
-    }
-  }
-
-  /// Decrypts the app-level AES encryption on a stored SSH key and returns
-  /// the raw PEM string.
-  Future<String> _decryptStoredKey(WidgetRef ref, int? sshKeyId) async {
-    _log.d('Decrypting stored key — keyId=$sshKeyId');
-
-    if (sshKeyId == null) {
-      throw const SshAuthenticationException(
-        'No SSH key configured for this server.',
-      );
-    }
-
-    final repository = ref.read(keyRepositoryProvider);
-    final keyEntity = await repository.getKeyById(sshKeyId);
-
-    if (keyEntity == null) {
-      _log.w('SSH key not found — keyId=$sshKeyId');
-      throw const SshAuthenticationException(
-        'The configured SSH key was not found.',
-      );
-    }
-
-    _log.d('Key found — keyId=$sshKeyId, decrypting private key');
-    return repository.decryptPrivateKey(keyEntity.encryptedPrivateKey);
-  }
-
-  /// Parses a PEM string into an [SSHKeyPair].
-  ///
-  /// Returns `null` if the key is passphrase-protected and no [passphrase]
-  /// was provided (instead of throwing), allowing the caller to prompt the
-  /// user for a passphrase and retry.
-  ///
-  /// Throws [SshAuthenticationException] for unrecoverable parse failures.
-  SSHKeyPair? _parseKeyPair(String pem, {String? passphrase}) {
-    _log.d('Parsing key pair — hasPassphrase=${passphrase != null}');
-    try {
-      final keyPairs = SSHKeyPair.fromPem(pem, passphrase);
-      if (keyPairs.isEmpty) {
-        _log.e('Key pair parsing returned empty list');
-        throw const SshAuthenticationException(
-          'Failed to parse the SSH private key.',
-        );
-      }
-      _log.d('Key pair parsed successfully');
-      return keyPairs.first;
-    } on SSHKeyDecryptError {
-      // Key is encrypted and no passphrase was provided — signal caller
-      // to prompt for passphrase by returning null.
-      if (passphrase == null) {
-        _log.d('Key is passphrase-protected, prompting user');
-        return null;
-      }
-      _log.w('Invalid passphrase provided for key');
-      throw const SshAuthenticationException(
-        'Invalid passphrase for the SSH private key.',
-      );
-    }
   }
 
   Future<bool> _showConnectConfirmDialog(
@@ -743,16 +622,6 @@ class _SidebarServerListState extends ConsumerState<_SidebarServerList> {
       ),
     );
     return result ?? false;
-  }
-
-  void _showErrorSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _onServerEdit(

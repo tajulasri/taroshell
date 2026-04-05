@@ -59,6 +59,24 @@ abstract final class AppColors {
   static const Color lightBorderStrong = Color(0xCCE2E8F0); // 0.8 alpha
 
   // ---------------------------------------------------------------------------
+  // Primary alpha variants
+  // ---------------------------------------------------------------------------
+  static const Color lightPrimaryAlpha10 = Color(0x1A4F46E5);
+  static const Color darkPrimaryAlpha10 = Color(0x1A6366F1);
+  static const Color lightPrimaryAlpha60 = Color(0x994F46E5);
+  static const Color darkPrimaryAlpha60 = Color(0x996366F1);
+
+  // ---------------------------------------------------------------------------
+  // Overlay colors
+  // ---------------------------------------------------------------------------
+  static const Color overlayLight = Color(0x1F000000); // Colors.black12
+
+  // ---------------------------------------------------------------------------
+  // Text on primary surface
+  // ---------------------------------------------------------------------------
+  static const Color textOnPrimary = Color(0xFFFFFFFF);
+
+  // ---------------------------------------------------------------------------
   // Terminal-specific colors
   // ---------------------------------------------------------------------------
   static const Color terminalCursorDark = Color(0xFFE2E8F0);

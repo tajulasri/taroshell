@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path/path.dart' as p;
+import 'package:taroshell/core/constants/app_constants.dart';
 import 'package:taroshell/core/constants/db_constants.dart';
 import 'package:taroshell/features/connections/data/daos/collection_dao.dart';
 import 'package:taroshell/features/connections/data/daos/connection_history_dao.dart';
@@ -165,7 +166,7 @@ class AppDatabase extends _$AppDatabase {
   /// to the current user (700).
   static Future<String> _resolveDatabasePath() async {
     final home = Platform.environment['HOME'] ?? '';
-    final dir = Directory(p.join(home, '.taroshell'));
+    final dir = Directory(p.join(home, AppConstants.appDirectoryName));
 
     if (!await dir.exists()) {
       await dir.create(recursive: true);
